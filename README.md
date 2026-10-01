@@ -19,8 +19,8 @@ The OpenAI API key is **read from an environment variable**. It is never hard-co
 Requires Python 3.10 – 3.13.
 
 ```bash
-git clone <this-repo-url>
-cd crewai_travel_planner
+git clone https://github.com/ramithatech-cyber/crewai-travel-planner.git
+cd crewai-travel-planner
 python -m venv venv
 ```
 
@@ -60,10 +60,15 @@ Which city? Jaipur
 ## Project structure
 
 ```
-crewai_travel_planner/
+crewai-travel-planner/
 ├── travel_planner.py   # agent, task and crew (the whole app)
 ├── requirements.txt    # crewai, python-dotenv
 ├── .env.example        # template for your API key / model
 ├── .gitignore          # keeps .env and venv out of git
+├── LICENSE
 └── README.md
 ```
+
+## License
+
+[MIT](LICENSE)
