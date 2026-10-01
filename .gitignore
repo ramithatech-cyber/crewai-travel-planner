@@ -1,0 +1,23 @@
+# Secrets
+.env
+
+# Virtual environment
+venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# CrewAI local storage
+.crewai/
+db/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Assignment brief (course material)
+*.pdf
