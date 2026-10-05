@@ -18,10 +18,10 @@ The code is split into small, documented functions that run in this order:
 |----------|--------------|
 | `load_settings()` | Loads `.env` (if present), checks `OPENAI_API_KEY`, and defaults `MODEL` to `openai/gpt-4o-mini`. |
 | `ask_user_for_city()` | Asks "Which city?" and returns the cleaned-up name. |
-| `create_travel_planner_agent()` | Builds the *Local Travel Planner* agent. |
-| `create_top_places_task(agent)` | Builds the "suggest exactly 3 places" task for that agent. |
-| `run_travel_crew(city_name)` | Puts the agent and task in a crew, runs it, and returns the answer. |
-| `main()` | Calls the steps above and prints the result. |
+| `build_travel_crew()` | Builds the *Local Travel Planner* agent, its "suggest exactly 3 places" task, and the crew that runs them. |
+| `main()` | Calls the steps above, runs the crew, and prints the result. |
+
+**Error handling:** instead of a long traceback, the script exits with a short, readable message if `crewai` is not installed, the API key is missing, the city prompt is empty or cancelled, or the OpenAI call fails (bad key, no internet, rate limit).
 
 The OpenAI API key is **read from an environment variable**. It is never hard-coded in the script.
 

@@ -12,14 +12,23 @@ Run:
     python travel_planner.py
 
 Flow:
-    load_settings()  ->  ask_user_for_city()  ->  create_travel_planner_agent()
-    ->  create_top_places_task()  ->  run_travel_crew()  ->  print the result
+    load_settings()  ->  ask_user_for_city()  ->  build_travel_crew()
+    ->  crew.kickoff()  ->  print the result
 """
 
 import os
 import sys
 
-from crewai import Agent, Crew, Task
+# CrewAI is the only required third-party package; explain how to fix a
+# missing install instead of showing a raw traceback.
+try:
+    from crewai import Agent, Crew, Task
+except ImportError:
+    sys.exit(
+        "Error: the 'crewai' package is not installed.\n"
+        "Activate your virtual environment and run:\n"
+        "  pip install -r requirements.txt"
+    )
 
 # Model used when the MODEL environment variable is not set.
 DEFAULT_MODEL = "openai/gpt-4o-mini"
@@ -57,23 +66,29 @@ def load_settings():
 def ask_user_for_city():
     """Prompt the user for a city name and return it as a clean string.
 
-    Exits if the user enters nothing.
+    Exits if the user enters nothing or cancels the prompt.
     """
-    # lstrip removes a stray byte-order mark that some terminals add to piped input.
-    city_name = input("Which city? ").strip().lstrip("﻿")
+    try:
+        # lstrip removes a stray byte-order mark that some terminals add to piped input.
+        city_name = input("Which city? ").strip().lstrip("﻿")
+    except (EOFError, KeyboardInterrupt):
+        # EOFError: input stream closed; KeyboardInterrupt: user pressed Ctrl+C.
+        sys.exit("\nNo city entered - exiting.")
+
     if not city_name:
         sys.exit("Please enter a city name.")
     return city_name
 
 
-def create_travel_planner_agent():
-    """Build the single agent that recommends places to visit.
+def build_travel_crew():
+    """Build the Travel Planner agent, its task, and the crew that runs them.
 
-    The role, goal and backstory tell the LLM who it is and how to write:
-    short, practical suggestions for first-time visitors. {city} is a
-    placeholder that CrewAI fills in when the crew is started.
+    {city} is a placeholder that CrewAI fills in when kickoff() is called.
+    The agent's role, goal and backstory set its voice (short, practical,
+    for first-time visitors); the task's expected_output pins the answer
+    to exactly 3 numbered lines.
     """
-    return Agent(
+    travel_planner_agent = Agent(
         role="Local Travel Planner",
         goal=(
             "Recommend the three most worthwhile places to visit in {city}, "
@@ -91,14 +106,7 @@ def create_travel_planner_agent():
         verbose=True,  # print the agent's reasoning while it works
     )
 
-
-def create_top_places_task(travel_planner_agent):
-    """Build the task that asks the agent for exactly 3 places in {city}.
-
-    expected_output pins down the exact format (3 numbered lines, nothing
-    else) so the answer stays short and easy to read.
-    """
-    return Task(
+    top_places_task = Task(
         description=(
             "The traveller is visiting {city}. Suggest exactly 3 places to visit "
             "in {city}. Choose well-known, genuinely distinct spots that are "
@@ -117,29 +125,30 @@ def create_top_places_task(travel_planner_agent):
         agent=travel_planner_agent,
     )
 
-
-def run_travel_crew(city_name):
-    """Assemble the agent and task into a crew, run it, and return the answer.
-
-    kickoff() replaces every {city} placeholder with city_name before the
-    agent starts working.
-    """
-    travel_planner_agent = create_travel_planner_agent()
-    top_places_task = create_top_places_task(travel_planner_agent)
-
-    travel_crew = Crew(
+    return Crew(
         agents=[travel_planner_agent],
         tasks=[top_places_task],
         verbose=True,
     )
-    return travel_crew.kickoff(inputs={"city": city_name})
 
 
 def main():
     """Entry point: check settings, ask for a city, and print 3 places to visit."""
     load_settings()
     city_name = ask_user_for_city()
-    top_places = run_travel_crew(city_name)
+
+    # kickoff() calls the OpenAI API, so it can fail on a bad key, no
+    # internet, rate limits, etc. Show a short message instead of a traceback.
+    try:
+        top_places = build_travel_crew().kickoff(inputs={"city": city_name})
+    except KeyboardInterrupt:
+        sys.exit("\nCancelled by user.")
+    except Exception as error:
+        sys.exit(
+            f"Error: could not get suggestions for {city_name}.\n"
+            f"Reason: {error}\n"
+            "Check your OPENAI_API_KEY, MODEL and internet connection."
+        )
 
     print(f"\nTop 3 places to visit in {city_name}:")
     print(top_places)
